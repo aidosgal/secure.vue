@@ -1,3 +1,14 @@
+<script setup>
+    import { useAuthModal } from '@/features/auth/api/useAuthModal';
+    
+    const { openAuthModal } = useAuthModal();
+    const navLinks = [
+      { href: '/', label: 'Про нас' },
+      { href: '/docs', label: 'Документация' },
+      { href: '/#faq', label: 'FAQ' },
+      { href: '/#contacts', label: 'Контакты' },
+    ]
+</script>
 <template>
   <div class="flex items-center border-b border-[#6a6a6b]">
     <div class="w-1/3">
@@ -18,22 +29,13 @@
     </div>
 
     <div class="w-1/3 flex justify-end">
-      <a
-        href="/login"
-        class="text-sm text-green py-3 px-7 border border-[#2af16b]"
+      <button
+          @click="openAuthModal"
+          class="text-sm text-green py-3 px-7 border border-[#22af16baf16b]"
       >
         Начать Пользоваться
-      </a>
+      </button>
     </div>
   </div>
 </template>
-
-<script setup>
-const navLinks = [
-  { href: '/', label: 'Про нас' },
-  { href: '/docs', label: 'Документация' },
-  { href: '/#faq', label: 'FAQ' },
-  { href: '/#contacts', label: 'Контакты' },
-]
-</script>
 
