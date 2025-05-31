@@ -1,3 +1,3 @@
 <template>
-    <div>Login Form</div>
+    <div class="text-green w-full">Login Form</div>
 </template>
