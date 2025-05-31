@@ -7,8 +7,13 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/home'),
   },
   {
-    path: '/login',
-    name: 'login',
-    component: () => import('@/pages/login'),
+    path: '/storage/files',
+    name: 'files',
+    component: () => import('@/pages/files'),
+  },
+  {
+    path: '/tools/password-generator',
+    name: 'password-generator',
+    component: () => import('@/pages/password-generator'),
   },
 ]

@@ -28,6 +28,8 @@ import {
     ChatBubbleBottomCenterTextIcon as ChatSolidIcon
 } from '@heroicons/vue/24/solid';
 
+const activeRoute = ref('/storage/files');
+
 const links = [
     {
         group: "Хранилище",
@@ -50,14 +52,12 @@ const links = [
         items: [
             { name: "Профиль", route: "/account/profile", outlineIcon: UserIcon, solidIcon: UserSolidIcon },
             { name: "Настройки", route: "/account/settings", outlineIcon: AdjustmentsHorizontalIcon, solidIcon: AdjustmentsSolidIcon },
-            { name: "Безопасность", route: "/account/security", outlineIcon: ShieldCheckIcon, solidIcon: ShieldCheckSolidIcon },
         ],
     },
     {
         group: "Помощь",
         items: [
             { name: "Частые вопросы", route: "/help/faq", outlineIcon: QuestionMarkCircleIcon, solidIcon: QuestionSolidIcon },
-            { name: "Поддержка", route: "/help/support", outlineIcon: ChatBubbleBottomCenterTextIcon, solidIcon: ChatSolidIcon },
         ],
     },
 ];
@@ -75,7 +75,7 @@ const setActiveRoute = (route) => {
             <ul>
                 <li v-for="item in section.items" :key="item.name">
                     <RouterLink :to="item.route"
-                        class="flex items-center w-full px-3 py-2 text-[15px] transition mb-1"
+                        class="flex items-center w-full px-3 py-2 text-[15px] transition mb-1 rounded-lg"
                         :class="activeRoute === item.route ? 'border border-[#2af16b] text-[#2af16b]' : 'hover:text-[#2af16b] text-[#6a6a6b]'"
                         @click="setActiveRoute(item.route)">
                         <component :is="activeRoute === item.route ? item.solidIcon : item.outlineIcon"
