@@ -8,15 +8,7 @@ import AboutCompany from "../about/AboutCompany.vue";
 
 const { isAuthModalOpen, closeAuthModal } = useAuthModal();
 
-const isLogin = ref(true);
-
-const switchToRegister = () => {
-    isLogin.value = false;
-};
-
-const switchToLogin = () => {
-    isLogin.value = true;
-};
+const isLogin = ref(false);
 
 const isLoading = ref(false);
 
@@ -70,28 +62,9 @@ onUnmounted(() => {
                         class="bg-black border border-gray-800 rounded-lg shadow-2xl w-full max-w-4xl overflow-hidden"
                         @click.stop>
                         <div class="flex min-h-[500px]">
-                            <div
-                                class="flex-1 bg-gradient-to-br from-gray-900 to-black p-8 flex flex-col justify-center relative overflow-hidden">
-                                <div class="absolute inset-0 opacity-10">
-                                    <div class="absolute top-10 left-10 w-32 h-32 bg-green-500 rounded-full blur-3xl">
-                                    </div>
-                                    <div
-                                        class="absolute bottom-10 right-10 w-24 h-24 bg-green-400 rounded-full blur-2xl">
-                                    </div>
-                                </div>
-                                <AboutCompany />
-                            </div>
+                            <AboutCompany />
                             <div class="flex-1 bg-black p-8 flex flex-col justify-center">
-                                <LoginForm 
-                                    v-if="isLogin" 
-                                    :closeAuthModal="closeAuthModal"
-                                    :switchToRegister="switchToRegister"
-                                />
-                                <RegisterForm 
-                                    v-else 
-                                    :closeAuthModal="closeAuthModal"
-                                    :switchToLogin="switchToLogin"
-                                />                            
+                                <LoginForm />
                             </div>
                         </div>
                     </div>

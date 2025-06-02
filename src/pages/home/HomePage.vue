@@ -3,7 +3,7 @@ import Banner from "./Banner.vue";
 </script>
 
 <template>
-  <div class="bg-black min-h-screen text-white">
+  <div class="min-h-screen text-white">
     <Banner />
     <section class="py-20 px-4 relative overflow-hidden">
       <div class="absolute inset-0 opacity-5">
@@ -83,7 +83,7 @@ import Banner from "./Banner.vue";
         </div>
 
         <div class="grid grid-cols-2 gap-8">
-          <div class="bg-black p-8 rounded-lg border border-gray-800 hover:border-green-500 transition-all duration-300 group">
+          <div class="p-8 rounded-lg border border-gray-800 hover:border-green-500 transition-all duration-300 group">
             <div class="w-16 h-16 bg-green-500 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
               <svg class="w-8 h-8 text-black" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.5C15.4,11.4 16,11.9 16,12.5V16.5C16,17.1 15.6,17.5 15,17.5H9C8.4,17.5 8,17.1 8,16.5V12.5C8,11.9 8.4,11.5 9,11.5V10C9,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.2,9.2 10.2,10V11.5H13.8V10C13.8,9.2 12.8,8.2 12,8.2Z"/>
@@ -100,7 +100,7 @@ import Banner from "./Banner.vue";
             </div>
           </div>
 
-          <div class="bg-black p-8 rounded-lg border border-gray-800 hover:border-green-500 transition-all duration-300 group">
+          <div class="p-8 rounded-lg border border-gray-800 hover:border-green-500 transition-all duration-300 group">
             <div class="w-16 h-16 bg-green-500 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
               <svg class="w-8 h-8 text-black" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12,18.5C15.5,18.5 19.31,17.56 22.25,15.25C22.85,14.74 23.26,14 23.26,13.26C23.26,11.44 20.84,10.24 18.5,9.7C21,9.16 23.5,7.5 23.5,5.25C23.5,2.5 18.5,0.5 12,0.5C5.5,0.5 0.5,2.5 0.5,5.25C0.5,7.5 3,9.16 5.5,9.7C3.16,10.24 0.74,11.44 0.74,13.26C0.74,14 1.15,14.74 1.75,15.25C4.69,17.56 8.5,18.5 12,18.5M12,2C16.5,2 21,3.5 21,5.25C21,7 16.5,8.5 12,8.5C7.5,8.5 3,7 3,5.25C3,3.5 7.5,2 12,2M12,10.5C15.5,10.5 18.74,11.86 18.74,13.26C18.74,14.66 15.5,16 12,16C8.5,16 5.26,14.66 5.26,13.26C5.26,11.86 8.5,10.5 12,10.5Z"/>
@@ -188,9 +188,7 @@ import Banner from "./Banner.vue";
       </div>
     </section>
 
-    <!-- Contacts Section -->
-    <section class="py-20 px-4 bg-black relative overflow-hidden">
-      <!-- Decorative background -->
+    <section class="py-20 px-4 relative overflow-hidden">
       <div class="absolute inset-0 opacity-5">
         <div class="absolute top-10 left-1/4 w-48 h-48 bg-green-500 rounded-full blur-3xl"></div>
         <div class="absolute bottom-10 right-1/4 w-32 h-32 bg-green-400 rounded-full blur-2xl"></div>
