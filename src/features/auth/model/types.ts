@@ -21,3 +21,7 @@ export interface AuthResponse {
   user_id: number;
   user: User;
 }
+
+export interface Password {
+  password: string;
+}
