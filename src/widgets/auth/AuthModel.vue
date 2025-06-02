@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 import { useAuthModal } from '@/features/auth/api/useAuthModal';
@@ -37,8 +37,6 @@ watch(isAuthModalOpen, (newValue) => {
         document.body.style.overflow = 'hidden';
     } else {
         document.body.style.overflow = '';
-        email.value = '';
-        password.value = '';
     }
 });
 

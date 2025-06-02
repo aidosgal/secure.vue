@@ -12,8 +12,9 @@ export const useAuthModal = () => {
   };
 
   return {
-    isAuthModalOpen: isAuthModalOpen,
+    isAuthModalOpen,
     openAuthModal,
     closeAuthModal
   };
 };
+
