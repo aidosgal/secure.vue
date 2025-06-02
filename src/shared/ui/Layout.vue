@@ -4,7 +4,7 @@ import LeftBar from "@/widgets/sidebar/LeftBar.vue";
 import RightBar from "@/widgets/sidebar/RightBar.vue";
 import { ref } from "vue";
 
-const isLogined = ref(false);
+const isLogined = ref(true);
 </script>
 
 <template>
@@ -24,7 +24,7 @@ const isLogined = ref(false);
         </div>
       </div>
 
-      <div v-else class="h-full p-5 hide-scrollbar">
+      <div v-else class="h-full hide-scrollbar">
         <slot />
       </div>
     </div>

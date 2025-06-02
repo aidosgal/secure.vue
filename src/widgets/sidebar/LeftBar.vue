@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import {
+    HomeIcon,
     DocumentIcon,
     KeyIcon,
     PencilSquareIcon,
@@ -15,6 +16,7 @@ import {
 } from '@heroicons/vue/24/outline';
 
 import {
+    HomeIcon as HomeSolidIcon,
     DocumentTextIcon,
     KeyIcon as KeySolidIcon,
     PencilSquareIcon as PencilSolidIcon,
@@ -28,9 +30,15 @@ import {
     ChatBubbleBottomCenterTextIcon as ChatSolidIcon
 } from '@heroicons/vue/24/solid';
 
-const activeRoute = ref('/storage/files');
+const activeRoute = ref('/');
 
 const links = [
+    {
+        group: "Главная",
+        items: [
+            { name: "Главная", route: "/", outlineIcon: HomeIcon, solidIcon: HomeSolidIcon },
+        ],
+    },
     {
         group: "Хранилище",
         items: [
@@ -58,6 +66,7 @@ const links = [
         group: "Помощь",
         items: [
             { name: "Частые вопросы", route: "/help/faq", outlineIcon: QuestionMarkCircleIcon, solidIcon: QuestionSolidIcon },
+            { name: "Документация", route: "/docs", outlineIcon: DocumentIcon, solidIcon: DocumentIcon },
         ],
     },
 ];
