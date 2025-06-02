@@ -1,79 +1,191 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import {
-    UserIcon,
-    CogIcon,
-    ShieldCheckIcon,
-    CreditCardIcon,
-    BellIcon,
-    DevicePhoneMobileIcon,
-    KeyIcon,
-    TrashIcon,
-    PencilIcon,
-    EyeIcon,
-    EyeSlashIcon,
-    PhotoIcon,
-    CheckIcon,
-    XMarkIcon,
-    ExclamationTriangleIcon,
-    ClockIcon,
-    GlobeAltIcon,
-    LockClosedIcon,
-    ArrowRightOnRectangleIcon,
-    DocumentDuplicateIcon,
-    QrCodeIcon,
-    DeviceTabletIcon,
-    ComputerDesktopIcon
-} from '@heroicons/vue/24/outline';
-import {
-    CheckCircleIcon,
-    ExclamationCircleIcon,
-    ShieldExclamationIcon
-} from '@heroicons/vue/24/solid';
+import { ref, onMounted } from "vue";
+import { UserIcon, ShieldCheckIcon, BellIcon } from "@heroicons/vue/24/outline";
+import { useProfile } from "../../features/auth/api/useProfile";
+import type { AuthResponse } from "../../features/auth/model/types";
 
-const activeTab = ref('profile');
+const activeTab = ref("profile");
 const showChangePassword = ref(false);
-const showDeleteAccount = ref(false);
-const show2FASetup = ref(false);
-const showCurrentPassword = ref(false);
-const showNewPassword = ref(false);
-const showConfirmPassword = ref(false);
+const isLoading = ref(false);
+const passwordLoading = ref(false);
 
 const tabs = [
-    { id: 'profile', name: 'Профиль', icon: UserIcon },
-    { id: 'security', name: 'Безопасность', icon: ShieldCheckIcon },
-    { id: 'billing', name: 'Оплата', icon: CreditCardIcon },
-    { id: 'notifications', name: 'Уведомления', icon: BellIcon },
-    { id: 'devices', name: 'Устройства', icon: DevicePhoneMobileIcon }
+    { id: "profile", name: "Профиль", icon: UserIcon },
+    { id: "security", name: "Безопасность", icon: ShieldCheckIcon },
+    { id: "notifications", name: "Уведомления", icon: BellIcon },
 ];
 
+const isLogined = ref(false);
+const data = ref<AuthResponse | null>(null);
+
+// API functions
+const updateUserProfile = async (profileData: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    username: string;
+}) => {
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("user_id");
+
+    if (!token || !userId) {
+        throw new Error("Token or user ID not found");
+    }
+
+    console.log("Updating profile with:", {
+        url: `${import.meta.env.VITE_API_BASE_URL}/secure-storage/user/${userId}/`,
+        token: token ? "Token present" : "No token",
+        userId,
+        data: profileData,
+    });
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/secure-storage/user/${userId}/`,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+            },
+            body: JSON.stringify(profileData),
+        },
+    );
+
+    console.log("Response status:", response.status);
+    console.log(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries()),
+    );
+
+    if (!response.ok) {
+        const responseText = await response.text();
+        console.log("Error response text:", responseText);
+
+        let errorMessage = "Failed to update profile";
+        try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+            // If response is not JSON, use the text as error message
+            errorMessage =
+                responseText ||
+                `HTTP ${response.status}: ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
+    }
+
+    const responseText = await response.text();
+    console.log("Success response text:", responseText);
+
+    // Handle empty response
+    if (!responseText) {
+        return { success: true };
+    }
+
+    try {
+        return JSON.parse(responseText);
+    } catch (parseError) {
+        console.log("Response is not JSON, treating as success");
+        return { success: true, data: responseText };
+    }
+};
+
+const changeUserPassword = async (passwordData: {
+    old_password: string;
+    new_password: string;
+    confirm_password: string;
+}) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        throw new Error("Token not found");
+    }
+
+    console.log("Changing password with:", {
+        url: `${import.meta.env.VITE_API_BASE_URL}/change-password/`,
+        token: token ? "Token present" : "No token",
+    });
+
+    const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/change-password/`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+            },
+            body: JSON.stringify(passwordData),
+        },
+    );
+
+    console.log("Password change response status:", response.status);
+
+    if (!response.ok) {
+        const responseText = await response.text();
+        console.log("Password change error response:", responseText);
+
+        let errorMessage = "Failed to change password";
+        try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+            errorMessage =
+                responseText ||
+                `HTTP ${response.status}: ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
+    }
+
+    const responseText = await response.text();
+    console.log("Password change success response:", responseText);
+
+    // Handle empty response
+    if (!responseText) {
+        return { success: true };
+    }
+
+    try {
+        return JSON.parse(responseText);
+    } catch (parseError) {
+        console.log(
+            "Password change response is not JSON, treating as success",
+        );
+        return { success: true, data: responseText };
+    }
+};
+
+onMounted(async () => {
+    try {
+        const profile = await useProfile();
+        isLogined.value = profile.isLogined.value;
+        data.value = profile.data;
+
+        // Update userProfile with actual data
+        if (data.value?.user) {
+            userProfile.value.first_name = data.value.user.first_name;
+            userProfile.value.last_name = data.value.user.last_name;
+            userProfile.value.email = data.value.user.email;
+            userProfile.value.username = data.value.user.username;
+        }
+
+        console.log(data.value?.user.first_name);
+    } catch (err) {
+        console.error("Failed to load profile:", err);
+    }
+});
+
 const userProfile = ref({
-    name: 'Алексей Петров',
-    email: 'alexey.petrov@example.com',
+    first_name: "",
+    last_name: "",
+    email: "",
+    username: "",
     avatar: null,
-    phone: '+7 (999) 123-45-67',
-    timezone: 'Europe/Moscow',
-    language: 'ru',
-    plan: 'Premium',
-    memberSince: '15 января 2024',
-    lastLogin: '2 часа назад'
-});
-
-const securitySettings = ref({
-    twoFactorEnabled: true,
-    biometricEnabled: false,
-    sessionTimeout: 30,
-    loginNotifications: true,
-    backupCodes: 8
-});
-
-const billingInfo = ref({
-    plan: 'Premium',
-    price: '₽599',
-    period: 'месяц',
-    nextBilling: '15 июля 2025',
-    paymentMethod: '**** 1234',
-    autoRenewal: true
+    language: "ru",
+    plan: "Premium",
+    memberSince: "15 января 2024",
+    lastLogin: "2 часа назад",
 });
 
 const notifications = ref({
@@ -81,114 +193,78 @@ const notifications = ref({
     weakPasswords: true,
     billing: true,
     newsletter: false,
-    tips: true
+    tips: true,
 });
-
-const devices = ref([
-    {
-        id: 1,
-        name: 'MacBook Pro',
-        type: 'desktop',
-        browser: 'Chrome 126.0',
-        location: 'Москва, Россия',
-        lastActive: 'Сейчас',
-        current: true
-    },
-    {
-        id: 2,
-        name: 'iPhone 15',
-        type: 'mobile',
-        browser: 'Safari Mobile',
-        location: 'Москва, Россия',
-        lastActive: '1 час назад',
-        current: false
-    },
-    {
-        id: 3,
-        name: 'iPad Air',
-        type: 'tablet',
-        browser: 'Safari Mobile',
-        location: 'Санкт-Петербург, Россия',
-        lastActive: '2 дня назад',
-        current: false
-    }
-]);
 
 const passwordForm = ref({
-    current: '',
-    new: '',
-    confirm: ''
+    current: "",
+    new: "",
+    confirm: "",
 });
 
-const getDeviceIcon = (type) => {
-    switch (type) {
-        case 'mobile': return DevicePhoneMobileIcon;
-        case 'tablet': return DeviceTabletIcon;
-        case 'desktop': return ComputerDesktopIcon;
-        default: return ComputerDesktopIcon;
-    }
-};
+const saveProfile = async () => {
+    try {
+        isLoading.value = true;
 
-const uploadAvatar = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            userProfile.value.avatar = e.target.result;
+        const profileData = {
+            first_name: userProfile.value.first_name,
+            last_name: userProfile.value.last_name,
+            email: userProfile.value.email,
+            username: userProfile.value.username,
         };
-        reader.readAsDataURL(file);
+
+        await updateUserProfile(profileData);
+
+        // Update local data
+        if (data.value?.user) {
+            data.value.user.first_name = profileData.first_name;
+            data.value.user.last_name = profileData.last_name;
+            data.value.user.email = profileData.email;
+            data.value.user.username = profileData.username;
+        }
+
+        alert("Профиль успешно обновлен!");
+        console.log("Профиль сохранен");
+    } catch (error) {
+        console.error("Failed to save profile:", error);
+        alert(`Ошибка при сохранении профиля: ${error.message}`);
+    } finally {
+        isLoading.value = false;
     }
 };
 
-const removeAvatar = () => {
-    userProfile.value.avatar = null;
-};
-
-const saveProfile = () => {
-    // Save profile logic
-    console.log('Профиль сохранен');
-};
-
-const changePassword = () => {
+const changePassword = async () => {
     if (passwordForm.value.new !== passwordForm.value.confirm) {
-        alert('Пароли не совпадают');
+        alert("Пароли не совпадают");
         return;
     }
-    // Change password logic
-    console.log('Пароль изменен');
-    showChangePassword.value = false;
-    passwordForm.value = { current: '', new: '', confirm: '' };
-};
 
-const toggle2FA = () => {
-    if (securitySettings.value.twoFactorEnabled) {
-        securitySettings.value.twoFactorEnabled = false;
-    } else {
-        show2FASetup.value = true;
+    if (!passwordForm.value.current || !passwordForm.value.new) {
+        alert("Заполните все поля");
+        return;
     }
-};
 
-const setup2FA = () => {
-    securitySettings.value.twoFactorEnabled = true;
-    show2FASetup.value = false;
-};
+    try {
+        passwordLoading.value = true;
 
-const logoutDevice = (deviceId) => {
-    devices.value = devices.value.filter(d => d.id !== deviceId);
-};
+        const passwordData = {
+            old_password: passwordForm.value.current,
+            new_password: passwordForm.value.new,
+            confirm_password: passwordForm.value.confirm,
+        };
 
-const logoutAllDevices = () => {
-    devices.value = devices.value.filter(d => d.current);
-};
+        await changeUserPassword(passwordData);
 
-const cancelSubscription = () => {
-    billingInfo.value.autoRenewal = false;
-};
-
-const deleteAccount = () => {
-    // Delete account logic
-    console.log('Аккаунт удален');
-    showDeleteAccount.value = false;
+        alert("Пароль успешно изменен!");
+        console.log("Пароль изменен");
+        showChangePassword.value = false;
+        passwordForm.value = { current: "", new: "", confirm: "" };
+    } catch (error) {
+        console.error("Failed to change password:", error);
+        alert(`Ошибка при изменении пароля: ${error.message}`);
+    } finally {
+        passwordLoading.value = false;
+    }
 };
 </script>
 
@@ -204,27 +280,21 @@ const deleteAccount = () => {
                 Управляйте настройками аккаунта и безопасностью
             </p>
         </div>
-
-        <!-- Profile Header -->
         <div class="bg-[#1e1e20] rounded-lg p-6 mb-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                <div class="relative">
-                    <div class="w-20 h-20 rounded-full bg-[#2F2F2F] flex items-center justify-center overflow-hidden">
-                        <img v-if="userProfile.avatar" :src="userProfile.avatar" alt="Avatar"
-                            class="w-full h-full object-cover" />
-                        <UserIcon v-else class="w-10 h-10 text-[#6a6a6b]" />
-                    </div>
-                    <label
-                        class="absolute -bottom-1 -right-1 w-6 h-6 bg-[#2af16b] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#2af16b]/80 transition">
-                        <PhotoIcon class="w-3 h-3 text-black" />
-                        <input type="file" accept="image/*" @change="uploadAvatar" class="hidden" />
-                    </label>
-                </div>
+            <div
+                class="flex flex-col sm:flex-row items-start sm:items-center gap-6"
+            >
                 <div class="flex-1">
-                    <h2 class="text-xl font-semibold mb-1">{{ userProfile.name }}</h2>
-                    <p class="text-[#6a6a6b] mb-2">{{ userProfile.email }}</p>
+                    <h2 class="text-xl font-semibold mb-1">
+                        {{
+                            `${data?.user.first_name || ""} ${data?.user.last_name || ""}`.trim()
+                        }}
+                    </h2>
+                    <p class="text-[#6a6a6b] mb-2">{{ data?.user.email }}</p>
                     <div class="flex flex-wrap items-center gap-4 text-sm">
-                        <span class="px-2 py-1 bg-[#2af16b]/20 text-[#2af16b] rounded text-xs">
+                        <span
+                            class="px-2 py-1 bg-[#2af16b]/20 text-[#2af16b] rounded text-xs"
+                        >
                             {{ userProfile.plan }}
                         </span>
                         <span class="text-[#6a6a6b]">
@@ -238,53 +308,103 @@ const deleteAccount = () => {
             </div>
         </div>
 
-        <!-- Tabs -->
         <div class="border-b border-[#2F2F2F] mb-6">
             <nav class="flex space-x-8 overflow-x-auto">
-                <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" :class="`flex items-center px-1 py-3 text-sm font-medium border-b-2 transition whitespace-nowrap ${activeTab === tab.id
-                        ? 'border-[#2af16b] text-[#2af16b]'
-                        : 'border-transparent text-[#6a6a6b] hover:text-white hover:border-[#6a6a6b]'
-                    }`">
+                <button
+                    v-for="tab in tabs"
+                    :key="tab.id"
+                    @click="activeTab = tab.id"
+                    :class="`flex items-center px-1 py-3 text-sm font-medium border-b-2 transition whitespace-nowrap ${
+                        activeTab === tab.id
+                            ? 'border-[#2af16b] text-[#2af16b]'
+                            : 'border-transparent text-[#6a6a6b] hover:text-white hover:border-[#6a6a6b]'
+                    }`"
+                >
                     <component :is="tab.icon" class="w-4 h-4 mr-2" />
                     {{ tab.name }}
                 </button>
             </nav>
         </div>
 
-        <!-- Profile Tab -->
         <div v-if="activeTab === 'profile'" class="space-y-6">
             <div class="bg-[#1e1e20] rounded-lg p-6">
                 <h3 class="font-semibold mb-4">Основная информация</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium mb-2">Имя</label>
-                        <input v-model="userProfile.name" type="text"
-                            class="w-full px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition" />
+                        <label class="block text-sm font-medium mb-2"
+                            >Имя</label
+                        >
+                        <input
+                            v-model="userProfile.first_name"
+                            type="text"
+                            :disabled="isLoading"
+                            class="w-full px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition disabled:opacity-50"
+                        />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2">Email</label>
-                        <input v-model="userProfile.email" type="email"
-                            class="w-full px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition" />
+                        <label class="block text-sm font-medium mb-2"
+                            >Фамилия</label
+                        >
+                        <input
+                            v-model="userProfile.last_name"
+                            type="text"
+                            :disabled="isLoading"
+                            class="w-full px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition disabled:opacity-50"
+                        />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2">Телефон</label>
-                        <input v-model="userProfile.phone" type="tel"
-                            class="w-full px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition" />
+                        <label class="block text-sm font-medium mb-2"
+                            >Email</label
+                        >
+                        <input
+                            v-model="userProfile.email"
+                            type="email"
+                            :disabled="isLoading"
+                            class="w-full px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition disabled:opacity-50"
+                        />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2">Часовой пояс</label>
-                        <select v-model="userProfile.timezone"
-                            class="w-full px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition">
-                            <option value="Europe/Moscow">Москва (UTC+3)</option>
-                            <option value="Europe/Kiev">Киев (UTC+2)</option>
-                            <option value="Asia/Almaty">Алматы (UTC+6)</option>
-                        </select>
+                        <label class="block text-sm font-medium mb-2"
+                            >Username</label
+                        >
+                        <input
+                            v-model="userProfile.username"
+                            type="text"
+                            :disabled="isLoading"
+                            class="w-full px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition disabled:opacity-50"
+                        />
                     </div>
                 </div>
                 <div class="flex justify-end mt-6">
-                    <button @click="saveProfile"
-                        class="px-4 py-2 bg-[#2af16b] text-black rounded-lg hover:bg-[#2af16b]/80 transition text-sm">
-                        Сохранить изменения
+                    <button
+                        @click="saveProfile"
+                        :disabled="isLoading"
+                        class="px-4 py-2 bg-[#2af16b] text-black rounded-lg hover:bg-[#2af16b]/80 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                        <span v-if="isLoading" class="mr-2">
+                            <svg
+                                class="animate-spin h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                ></circle>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                        </span>
+                        {{
+                            isLoading ? "Сохранение..." : "Сохранить изменения"
+                        }}
                     </button>
                 </div>
             </div>
@@ -295,10 +415,14 @@ const deleteAccount = () => {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="font-medium">Язык интерфейса</p>
-                            <p class="text-sm text-[#6a6a6b]">Выберите предпочитаемый язык</p>
+                            <p class="text-sm text-[#6a6a6b]">
+                                Выберите предпочитаемый язык
+                            </p>
                         </div>
-                        <select v-model="userProfile.language"
-                            class="px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition">
+                        <select
+                            v-model="userProfile.language"
+                            class="px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition"
+                        >
                             <option value="ru">Русский</option>
                             <option value="en">English</option>
                             <option value="uk">Українська</option>
@@ -308,183 +432,109 @@ const deleteAccount = () => {
             </div>
         </div>
 
-        <!-- Security Tab -->
         <div v-if="activeTab === 'security'" class="space-y-6">
-            <!-- Security Overview -->
-            <div class="bg-[#1e1e20] rounded-lg p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold">Состояние безопасности</h3>
-                    <div class="flex items-center">
-                        <CheckCircleIcon class="w-5 h-5 text-[#2af16b] mr-2" />
-                        <span class="text-sm text-[#2af16b]">Отлично</span>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-[#0f0f10] rounded-lg p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-[#6a6a6b]">2FA</p>
-                                <p class="font-medium">{{ securitySettings.twoFactorEnabled ? 'Включена' : 'Отключена'
-                                    }}</p>
-                            </div>
-                            <CheckCircleIcon v-if="securitySettings.twoFactorEnabled" class="w-5 h-5 text-[#2af16b]" />
-                            <ExclamationCircleIcon v-else class="w-5 h-5 text-yellow-400" />
-                        </div>
-                    </div>
-                    <div class="bg-[#0f0f10] rounded-lg p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-[#6a6a6b]">Резервные коды</p>
-                                <p class="font-medium">{{ securitySettings.backupCodes }} доступно</p>
-                            </div>
-                            <CheckCircleIcon class="w-5 h-5 text-[#2af16b]" />
-                        </div>
-                    </div>
-                    <div class="bg-[#0f0f10] rounded-lg p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-[#6a6a6b]">Тайм-аут сессии</p>
-                                <p class="font-medium">{{ securitySettings.sessionTimeout }} мин</p>
-                            </div>
-                            <CheckCircleIcon class="w-5 h-5 text-[#2af16b]" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Password -->
             <div class="bg-[#1e1e20] rounded-lg p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h3 class="font-semibold">Мастер-пароль</h3>
-                        <p class="text-sm text-[#6a6a6b]">Последнее изменение: 2 месяца назад</p>
+                        <p class="text-sm text-[#6a6a6b]">
+                            Последнее изменение: 2 месяца назад
+                        </p>
                     </div>
-                    <button @click="showChangePassword = true"
-                        class="px-4 py-2 bg-[#2F2F2F] hover:bg-[#3F3F3F] rounded-lg text-sm transition">
+                    <button
+                        @click="showChangePassword = true"
+                        class="px-4 py-2 bg-[#2F2F2F] hover:bg-[#3F3F3F] rounded-lg text-sm transition"
+                    >
                         Изменить пароль
                     </button>
                 </div>
-            </div>
 
-            <!-- 2FA -->
-            <div class="bg-[#1e1e20] rounded-lg p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-semibold">Двухфакторная аутентификация</h3>
-                        <p class="text-sm text-[#6a6a6b]">Дополнительная защита вашего аккаунта</p>
-                    </div>
-                    <button @click="toggle2FA" :class="`px-4 py-2 rounded-lg text-sm transition ${securitySettings.twoFactorEnabled
-                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                            : 'bg-[#2af16b] text-black hover:bg-[#2af16b]/80'
-                        }`">
-                        {{ securitySettings.twoFactorEnabled ? 'Отключить 2FA' : 'Включить 2FA' }}
-                    </button>
-                </div>
-                <div v-if="securitySettings.twoFactorEnabled" class="bg-[#0f0f10] rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <QrCodeIcon class="w-5 h-5 text-[#2af16b] mr-3" />
-                            <div>
-                                <p class="font-medium text-sm">Authenticator App</p>
-                                <p class="text-xs text-[#6a6a6b]">Google Authenticator, Authy</p>
-                            </div>
-                        </div>
-                        <button class="text-xs text-[#2af16b] hover:underline">
-                            Показать QR-код
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Session Settings -->
-            <div class="bg-[#1e1e20] rounded-lg p-6">
-                <h3 class="font-semibold mb-4">Настройки сессии</h3>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
+                <!-- Change Password Modal -->
+                <div
+                    v-if="showChangePassword"
+                    class="mt-6 p-4 bg-[#0f0f10] rounded-lg border border-[#2F2F2F]"
+                >
+                    <h4 class="font-medium mb-4">Изменение пароля</h4>
+                    <div class="space-y-4">
                         <div>
-                            <p class="font-medium">Автоматический выход</p>
-                            <p class="text-sm text-[#6a6a6b]">Время неактивности до выхода</p>
+                            <label class="block text-sm font-medium mb-2"
+                                >Текущий пароль</label
+                            >
+                            <input
+                                v-model="passwordForm.current"
+                                type="password"
+                                :disabled="passwordLoading"
+                                class="w-full px-3 py-2 bg-[#1e1e20] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition disabled:opacity-50"
+                            />
                         </div>
-                        <select v-model="securitySettings.sessionTimeout"
-                            class="px-3 py-2 bg-[#0f0f10] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition">
-                            <option :value="15">15 минут</option>
-                            <option :value="30">30 минут</option>
-                            <option :value="60">1 час</option>
-                            <option :value="240">4 часа</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Billing Tab -->
-        <div v-if="activeTab === 'billing'" class="space-y-6">
-            <!-- Current Plan -->
-            <div class="bg-[#1e1e20] rounded-lg p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="font-semibold">Текущий тариф</h3>
-                        <p class="text-sm text-[#6a6a6b]">{{ billingInfo.plan }} Plan</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-2xl font-bold">{{ billingInfo.price }}</p>
-                        <p class="text-sm text-[#6a6a6b]">в {{ billingInfo.period }}</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div class="bg-[#0f0f10] rounded-lg p-4">
-                        <p class="text-sm text-[#6a6a6b] mb-1">Следующее списание</p>
-                        <p class="font-medium">{{ billingInfo.nextBilling }}</p>
-                    </div>
-                    <div class="bg-[#0f0f10] rounded-lg p-4">
-                        <p class="text-sm text-[#6a6a6b] mb-1">Способ оплаты</p>
-                        <p class="font-medium">Карта {{ billingInfo.paymentMethod }}</p>
-                    </div>
-                </div>
-                <div class="flex flex-wrap gap-3">
-                    <button
-                        class="px-4 py-2 bg-[#2af16b] text-black rounded-lg hover:bg-[#2af16b]/80 transition text-sm">
-                        Изменить тариф
-                    </button>
-                    <button class="px-4 py-2 bg-[#2F2F2F] hover:bg-[#3F3F3F] rounded-lg text-sm transition">
-                        Изменить оплату
-                    </button>
-                    <button @click="cancelSubscription"
-                        class="px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-sm transition">
-                        {{ billingInfo.autoRenewal ? 'Отменить подписку' : 'Подписка отменена' }}
-                    </button>
-                </div>
-            </div>
-
-            <!-- Billing History -->
-            <div class="bg-[#1e1e20] rounded-lg p-6">
-                <h3 class="font-semibold mb-4">История платежей</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between py-3 border-b border-[#2F2F2F] last:border-b-0">
                         <div>
-                            <p class="font-medium">Premium Plan</p>
-                            <p class="text-sm text-[#6a6a6b]">15 июня 2025</p>
+                            <label class="block text-sm font-medium mb-2"
+                                >Новый пароль</label
+                            >
+                            <input
+                                v-model="passwordForm.new"
+                                type="password"
+                                :disabled="passwordLoading"
+                                class="w-full px-3 py-2 bg-[#1e1e20] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition disabled:opacity-50"
+                            />
                         </div>
-                        <div class="text-right">
-                            <p class="font-medium">₽599</p>
-                            <button class="text-xs text-[#2af16b] hover:underline">Скачать</button>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between py-3 border-b border-[#2F2F2F] last:border-b-0">
                         <div>
-                            <p class="font-medium">Premium Plan</p>
-                            <p class="text-sm text-[#6a6a6b]">15 мая 2025</p>
+                            <label class="block text-sm font-medium mb-2"
+                                >Подтвердите новый пароль</label
+                            >
+                            <input
+                                v-model="passwordForm.confirm"
+                                type="password"
+                                :disabled="passwordLoading"
+                                class="w-full px-3 py-2 bg-[#1e1e20] border border-[#2F2F2F] rounded-lg text-sm focus:outline-none focus:border-[#2af16b] transition disabled:opacity-50"
+                            />
                         </div>
-                        <div class="text-right">
-                            <p class="font-medium">₽599</p>
-                            <button class="text-xs text-[#2af16b] hover:underline">Скачать</button>
+                        <div class="flex justify-end space-x-3">
+                            <button
+                                @click="showChangePassword = false"
+                                :disabled="passwordLoading"
+                                class="px-4 py-2 bg-[#2F2F2F] hover:bg-[#3F3F3F] rounded-lg text-sm transition disabled:opacity-50"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                @click="changePassword"
+                                :disabled="passwordLoading"
+                                class="px-4 py-2 bg-[#2af16b] text-black rounded-lg hover:bg-[#2af16b]/80 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                            >
+                                <span v-if="passwordLoading" class="mr-2">
+                                    <svg
+                                        class="animate-spin h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            class="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        ></circle>
+                                        <path
+                                            class="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                    </svg>
+                                </span>
+                                {{
+                                    passwordLoading
+                                        ? "Изменение..."
+                                        : "Изменить пароль"
+                                }}
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Notifications Tab -->
         <div v-if="activeTab === 'notifications'" class="space-y-6">
             <div class="bg-[#1e1e20] rounded-lg p-6">
                 <h3 class="font-semibold mb-4">Настройки уведомлений</h3>
@@ -492,49 +542,81 @@ const deleteAccount = () => {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="font-medium">Оповещения о безопасности</p>
-                            <p class="text-sm text-[#6a6a6b]">Подозрительная активность, новые входы</p>
+                            <p class="text-sm text-[#6a6a6b]">
+                                Подозрительная активность, новые входы
+                            </p>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input v-model="notifications.securityAlerts" type="checkbox" class="sr-only peer">
+                        <label
+                            class="relative inline-flex items-center cursor-pointer"
+                        >
+                            <input
+                                v-model="notifications.securityAlerts"
+                                type="checkbox"
+                                class="sr-only peer"
+                            />
                             <div
-                                class="w-11 h-6 bg-[#2F2F2F] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2af16b]">
-                            </div>
+                                class="w-11 h-6 bg-[#2F2F2F] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2af16b]"
+                            ></div>
                         </label>
                     </div>
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="font-medium">Слабые пароли</p>
-                            <p class="text-sm text-[#6a6a6b]">Уведомления о небезопасных паролях</p>
+                            <p class="text-sm text-[#6a6a6b]">
+                                Уведомления о небезопасных паролях
+                            </p>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input v-model="notifications.weakPasswords" type="checkbox" class="sr-only peer">
+                        <label
+                            class="relative inline-flex items-center cursor-pointer"
+                        >
+                            <input
+                                v-model="notifications.weakPasswords"
+                                type="checkbox"
+                                class="sr-only peer"
+                            />
                             <div
-                                class="w-11 h-6 bg-[#2F2F2F] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2af16b]">
-                            </div>
+                                class="w-11 h-6 bg-[#2F2F2F] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2af16b]"
+                            ></div>
                         </label>
                     </div>
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="font-medium">Платежи и счета</p>
-                            <p class="text-sm text-[#6a6a6b]">Информация о списаниях и счетах</p>
+                            <p class="text-sm text-[#6a6a6b]">
+                                Информация о списаниях и счетах
+                            </p>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input v-model="notifications.billing" type="checkbox" class="sr-only peer">
+                        <label
+                            class="relative inline-flex items-center cursor-pointer"
+                        >
+                            <input
+                                v-model="notifications.billing"
+                                type="checkbox"
+                                class="sr-only peer"
+                            />
                             <div
-                                class="w-11 h-6 bg-[#2F2F2F] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2af16b]">
-                            </div>
+                                class="w-11 h-6 bg-[#2F2F2F] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2af16b]"
+                            ></div>
                         </label>
                     </div>
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="font-medium">Советы и рекомендации</p>
-                            <p class="text-sm text-[#6a6a6b]">Полезные советы по безопасности</p>
+                            <p class="text-sm text-[#6a6a6b]">
+                                Полезные советы по безопасности
+                            </p>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input v-model="notifications.tips" type="checkbox" class="sr-only peer">
+                        <label
+                            class="relative inline-flex items-center cursor-pointer"
+                        >
+                            <input
+                                v-model="notifications.tips"
+                                type="checkbox"
+                                class="sr-only peer"
+                            />
                             <div
-                                class="w-11 h-6 bg-[#2F2F2F] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2af16b]">
-                            </div>
+                                class="w-11 h-6 bg-[#2F2F2F] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2af16b]"
+                            ></div>
                         </label>
                     </div>
                 </div>
