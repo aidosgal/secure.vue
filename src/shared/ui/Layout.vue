@@ -3,13 +3,16 @@ import NavBar from "@/widgets/header/NavBar.vue";
 import LeftBar from "@/widgets/sidebar/LeftBar.vue";
 import RightBar from "@/widgets/sidebar/RightBar.vue";
 import { ref } from "vue";
+import { useProfile } from "@/features/auth/api/useProfile";
 
-const isLogined = ref(true);
+const { isLogined } = useProfile();
 </script>
 
 <template>
-  <div class="h-screen flex flex-col mx-auto w-[1200px]">
-    <NavBar />
+  <div class="h-screen flex flex-col mx-auto w-[1400px]">
+    <NavBar 
+        :isLogined="isLogined"
+    />
 
     <div class="h-full">
       <div v-if="isLogined" class="grid grid-cols-5 h-full">

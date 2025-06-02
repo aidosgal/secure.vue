@@ -188,7 +188,7 @@ import Banner from "./Banner.vue";
       </div>
     </section>
 
-    <section class="py-20 px-4 relative overflow-hidden">
+    <section class="py-20 px-4 relative overflow-hidden" id="contacts">
       <div class="absolute inset-0 opacity-5">
         <div class="absolute top-10 left-1/4 w-48 h-48 bg-green-500 rounded-full blur-3xl"></div>
         <div class="absolute bottom-10 right-1/4 w-32 h-32 bg-green-400 rounded-full blur-2xl"></div>

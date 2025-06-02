@@ -44,7 +44,6 @@ const links = [
         items: [
             { name: "Файлы", route: "/storage/files", outlineIcon: DocumentIcon, solidIcon: DocumentTextIcon },
             { name: "Пароли", route: "/storage/passwords", outlineIcon: KeyIcon, solidIcon: KeySolidIcon },
-            { name: "Заметки", route: "/storage/notes", outlineIcon: PencilSquareIcon, solidIcon: PencilSolidIcon },
         ],
     },
     {
@@ -59,7 +58,6 @@ const links = [
         group: "Аккаунт",
         items: [
             { name: "Профиль", route: "/account/profile", outlineIcon: UserIcon, solidIcon: UserSolidIcon },
-            { name: "Настройки", route: "/account/settings", outlineIcon: AdjustmentsHorizontalIcon, solidIcon: AdjustmentsSolidIcon },
         ],
     },
     {
