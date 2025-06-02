@@ -3,6 +3,14 @@ import { ref, onMounted } from "vue";
 import { UserIcon, ShieldCheckIcon, BellIcon } from "@heroicons/vue/24/outline";
 import { useProfile } from "../../features/auth/api/useProfile";
 import type { AuthResponse } from "../../features/auth/model/types";
+import { useRouter } from "vue-router";
+const router = useRouter();
+
+const logout = () => {
+    localStorage.setItem("token", "");
+    localStorage.setItem("user_id", "");
+    router.push("/");
+};
 
 const activeTab = ref("profile");
 const showChangePassword = ref(false);
@@ -304,6 +312,14 @@ const changePassword = async () => {
                             Последний вход: {{ userProfile.lastLogin }}
                         </span>
                     </div>
+                </div>
+                <div class="ml-auto my-auto">
+                    <button
+                        @click="logout"
+                        class="cursor-pointer bg-[#2af16b] text-black px-7 py-2"
+                    >
+                        Выйти
+                    </button>
                 </div>
             </div>
         </div>
