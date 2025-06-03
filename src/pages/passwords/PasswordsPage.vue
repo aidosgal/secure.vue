@@ -149,6 +149,22 @@ const fetchRecords = async () => {
     }
 };
 
+const fetchRecordById = async (recordId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/secure-storage/storage/app/${recordId}/`, {
+            headers: getHeaders()
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch record');
+        
+        const data = await response.json();
+        return data.body || [];
+    } catch (error) {
+        console.error('Error fetching record:', error);
+        return [];
+    }
+};
+
 const createRecord = async () => {
     try {
         const indicators = currentFields.value.map(field => ({
@@ -237,10 +253,36 @@ const resetForm = () => {
     formData.value = initialFormData;
 };
 
-const startEdit = (record) => {
-    editingRecord.value = record;
-    // Populate form with existing data (you'd need to fetch the full record data)
-    showForm.value = true;
+const startEdit = async (record) => {
+    try {
+        loading.value = true;
+        editingRecord.value = record;
+        
+        // Fetch the full record data by ID
+        const recordData = await fetchRecordById(record.id);
+        
+        // Initialize form data with empty values first
+        const initialFormData = {};
+        currentFields.value.forEach(field => {
+            initialFormData[field.code] = '';
+        });
+        
+        // Populate form with fetched record data
+        recordData.forEach(item => {
+            // Map the indicator_code to field code for form population
+            const field = currentFields.value.find(f => f.code === item.indicator_code);
+            if (field) {
+                initialFormData[field.code] = item.value || '';
+            }
+        });
+        
+        formData.value = initialFormData;
+        showForm.value = true;
+    } catch (error) {
+        console.error('Error loading record for editing:', error);
+    } finally {
+        loading.value = false;
+    }
 };
 
 const togglePasswordVisibility = (recordId, fieldCode) => {
@@ -260,6 +302,16 @@ const copyToClipboard = async (text, type) => {
     } catch (err) {
         console.error('Copy failed:', err);
     }
+};
+
+const getDisplayValue = (record, field) => {
+    // Try to get value from record fields if it's a detailed record
+    if (record.fields && Array.isArray(record.fields)) {
+        const fieldData = record.fields.find(f => f.indicator_code === field.code);
+        return fieldData?.value || 'Не задано';
+    }
+    // Fallback to direct property access
+    return record[field.code] || 'Не задано';
 };
 
 const toggleRecordSelection = (recordId) => {
@@ -310,7 +362,6 @@ const handleSubmit = () => {
     }
 };
 </script>
-
 <template>
     <div class="py-5 space-y-6">
         <!-- Header -->
