@@ -15,6 +15,7 @@ import {
     GlobeAltIcon,
     UserIcon,
     FolderIcon,
+    FilterIcon,
     Squares2X2Icon,
     ListBulletIcon,
     ArrowPathIcon,
@@ -37,7 +38,6 @@ const showForm = ref(false);
 const editingRecord = ref(null);
 const visiblePasswords = ref(new Set());
 const loading = ref(false);
-const useDemoMode = ref(true); // Use demo if no token
 
 // API Data
 const storageTypes = ref([]);
@@ -58,118 +58,6 @@ const getHeaders = () => ({
     'Authorization': `Token ${getToken()}`
 });
 
-// Demo Data
-const demoStorageTypes = [
-    {
-        document_code: 'STORAGE_LOGIN',
-        document_short_name: { ru: 'Логины' },
-        document_name: { ru: 'Логины и пароли' }
-    },
-    {
-        document_code: 'STORAGE_CARD',
-        document_short_name: { ru: 'Карты' },
-        document_name: { ru: 'Банковские карты' }
-    },
-    {
-        document_code: 'STORAGE_PERSONAL_INFO',
-        document_short_name: { ru: 'Личные данные' },
-        document_name: { ru: 'Персональная информация' }
-    },
-    {
-        document_code: 'FOLDERS',
-        document_short_name: { ru: 'Папки' },
-        document_name: { ru: 'Файловые папки' }
-    },
-    {
-        document_code: 'STORAGE_FILES',
-        document_short_name: { ru: 'Файлы' },
-        document_name: { ru: 'Документы и файлы' }
-    }
-];
-
-const demoFields = {
-    'STORAGE_LOGIN': [
-        { id: 1, code: 'website', short_name: { ru: 'Сайт' }, type_value: 'str', is_required: true, active: true, index_sort: 1 },
-        { id: 2, code: 'username', short_name: { ru: 'Логин' }, type_value: 'str', is_required: true, active: true, index_sort: 2 },
-        { id: 3, code: 'password', short_name: { ru: 'Пароль' }, type_value: 'binary', is_required: true, active: true, index_sort: 3 },
-        { id: 4, code: 'notes', short_name: { ru: 'Заметки' }, type_value: 'text', is_required: false, active: true, index_sort: 4 }
-    ],
-    'STORAGE_CARD': [
-        { id: 5, code: 'card_name', short_name: { ru: 'Название карты' }, type_value: 'str', is_required: true, active: true, index_sort: 1 },
-        { id: 6, code: 'card_number', short_name: { ru: 'Номер карты' }, type_value: 'binary', is_required: true, active: true, index_sort: 2 },
-        { id: 7, code: 'expiry_date', short_name: { ru: 'Срок действия' }, type_value: 'str', is_required: true, active: true, index_sort: 3 },
-        { id: 8, code: 'cvv', short_name: { ru: 'CVV' }, type_value: 'binary', is_required: true, active: true, index_sort: 4 }
-    ],
-    'STORAGE_PERSONAL_INFO': [
-        { id: 9, code: 'full_name', short_name: { ru: 'ФИО' }, type_value: 'str', is_required: true, active: true, index_sort: 1 },
-        { id: 10, code: 'email', short_name: { ru: 'Email' }, type_value: 'str', is_required: false, active: true, index_sort: 2 },
-        { id: 11, code: 'phone', short_name: { ru: 'Телефон' }, type_value: 'str', is_required: false, active: true, index_sort: 3 },
-        { id: 12, code: 'address', short_name: { ru: 'Адрес' }, type_value: 'text', is_required: false, active: true, index_sort: 4 }
-    ],
-    'FOLDERS': [
-        { id: 13, code: 'folder_name', short_name: { ru: 'Название папки' }, type_value: 'str', is_required: true, active: true, index_sort: 1 },
-        { id: 14, code: 'description', short_name: { ru: 'Описание' }, type_value: 'text', is_required: false, active: true, index_sort: 2 }
-    ],
-    'STORAGE_FILES': [
-        { id: 15, code: 'file_name', short_name: { ru: 'Название файла' }, type_value: 'str', is_required: true, active: true, index_sort: 1 },
-        { id: 16, code: 'file_type', short_name: { ru: 'Тип файла' }, type_value: 'str', is_required: false, active: true, index_sort: 2 },
-        { id: 17, code: 'file_size', short_name: { ru: 'Размер файла' }, type_value: 'int', is_required: false, active: true, index_sort: 3 }
-    ]
-};
-
-const initializeDemoRecords = () => {
-    const savedRecords = localStorage.getItem('secure_storage_records');
-    if (savedRecords) {
-        return JSON.parse(savedRecords);
-    }
-    
-    const demoRecords = [
-        {
-            id: 1,
-            name: 'Google Account',
-            owner: 'user@example.com',
-            storage_type: 'STORAGE_LOGIN',
-            website: 'google.com',
-            username: 'user@gmail.com',
-            password: 'securePassword123',
-            notes: 'Main Google account'
-        },
-        {
-            id: 2,
-            name: 'Facebook',
-            owner: 'user@example.com',
-            storage_type: 'STORAGE_LOGIN',
-            website: 'facebook.com',
-            username: 'user@example.com',
-            password: 'myFbPassword!',
-            notes: 'Social media account'
-        },
-        {
-            id: 3,
-            name: 'Visa Card',
-            owner: 'user@example.com',
-            storage_type: 'STORAGE_CARD',
-            card_name: 'Main Visa Card',
-            card_number: '4111111111111111',
-            expiry_date: '12/25',
-            cvv: '123'
-        },
-        {
-            id: 4,
-            name: 'Personal Info',
-            owner: 'user@example.com',
-            storage_type: 'STORAGE_PERSONAL_INFO',
-            full_name: 'Иван Иванов',
-            email: 'ivan@example.com',
-            phone: '+7 777 123 4567',
-            address: 'г. Алматы, ул. Абая 150'
-        }
-    ];
-    
-    localStorage.setItem('secure_storage_records', JSON.stringify(demoRecords));
-    return demoRecords;
-};
-
 // Storage type icons mapping
 const getStorageIcon = (code) => {
     const iconMap = {
@@ -188,36 +76,16 @@ const getFieldTypeIcon = (type) => {
         'binary': EyeIcon,
         'str': UserIcon,
         'text': DocumentIcon,
-        'int': DocumentIcon,
+        'int': '#123',
+        'list': FilterIcon
     };
     return iconMap[type] || DocumentIcon;
-};
-
-// Local Storage Functions
-const saveDemoRecords = (recordsData) => {
-    localStorage.setItem('secure_storage_records', JSON.stringify(recordsData));
-};
-
-const getDemoRecords = () => {
-    const saved = localStorage.getItem('secure_storage_records');
-    return saved ? JSON.parse(saved) : initializeDemoRecords();
 };
 
 // API Functions
 const fetchStorageTypes = async () => {
     try {
         loading.value = true;
-        
-        if (useDemoMode.value) {
-            // Use demo data
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
-            storageTypes.value = demoStorageTypes;
-            if (demoStorageTypes.length > 0) {
-                selectedStorage.value = demoStorageTypes[0].document_code;
-            }
-            return;
-        }
-        
         const response = await fetch(`${API_BASE_URL}/secure-storage/storage/document-abstraction/`, {
             headers: getHeaders()
         });
@@ -232,10 +100,6 @@ const fetchStorageTypes = async () => {
         }
     } catch (error) {
         console.error('Error fetching storage types:', error);
-        // Fallback to demo mode
-        useDemoMode.value = true;
-        storageTypes.value = demoStorageTypes;
-        selectedStorage.value = demoStorageTypes[0].document_code;
     } finally {
         loading.value = false;
     }
@@ -245,19 +109,6 @@ const fetchFields = async () => {
     if (!selectedStorage.value) return;
     
     try {
-        if (useDemoMode.value) {
-            // Use demo data
-            currentFields.value = demoFields[selectedStorage.value] || [];
-            
-            // Initialize form data
-            const initialFormData = {};
-            currentFields.value.forEach(field => {
-                initialFormData[field.code] = '';
-            });
-            formData.value = initialFormData;
-            return;
-        }
-        
         const response = await fetch(`${API_BASE_URL}/secure-storage/storage/get-for-post/?code=${selectedStorage.value}`, {
             headers: getHeaders()
         });
@@ -275,13 +126,6 @@ const fetchFields = async () => {
         formData.value = initialFormData;
     } catch (error) {
         console.error('Error fetching fields:', error);
-        // Fallback to demo data
-        currentFields.value = demoFields[selectedStorage.value] || [];
-        const initialFormData = {};
-        currentFields.value.forEach(field => {
-            initialFormData[field.code] = '';
-        });
-        formData.value = initialFormData;
     }
 };
 
@@ -290,21 +134,7 @@ const fetchRecords = async () => {
     
     try {
         loading.value = true;
-        
-        if (useDemoMode.value) {
-            // Use demo data
-            await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API delay
-            const allRecords = getDemoRecords();
-            records.value = allRecords.filter(record => record.storage_type === selectedStorage.value);
-            return;
-        }
-        
-        // Parse out the suffix after "STORAGE_"
-        const storageCode = selectedStorage.value.startsWith('STORAGE_') 
-            ? selectedStorage.value.replace('STORAGE_', '') 
-            : selectedStorage.value;
-            
-        const response = await fetch(`${API_BASE_URL}/secure-storage/storage/?code_params=${storageCode}`, {
+        const response = await fetch(`${API_BASE_URL}/secure-storage/storage/?code_params=${selectedStorage.value}`, {
             headers: getHeaders()
         });
         
@@ -314,9 +144,7 @@ const fetchRecords = async () => {
         records.value = data.results?.body || [];
     } catch (error) {
         console.error('Error fetching records:', error);
-        // Fallback to demo data
-        const allRecords = getDemoRecords();
-        records.value = allRecords.filter(record => record.storage_type === selectedStorage.value);
+        records.value = [];
     } finally {
         loading.value = false;
     }
@@ -324,24 +152,6 @@ const fetchRecords = async () => {
 
 const createRecord = async () => {
     try {
-        if (useDemoMode.value) {
-            // Create record in localStorage
-            const allRecords = getDemoRecords();
-            const newRecord = {
-                id: Math.max(0, ...allRecords.map(r => r.id)) + 1,
-                name: formData.value.website || formData.value.card_name || formData.value.full_name || formData.value.folder_name || formData.value.file_name || 'New Record',
-                owner: 'demo@user.com',
-                storage_type: selectedStorage.value,
-                ...formData.value
-            };
-            
-            allRecords.push(newRecord);
-            saveDemoRecords(allRecords);
-            await fetchRecords();
-            resetForm();
-            return;
-        }
-        
         const indicators = currentFields.value.map(field => ({
             code: field.code,
             value: formData.value[field.code] || '',
@@ -370,25 +180,6 @@ const updateRecord = async () => {
     if (!editingRecord.value) return;
 
     try {
-        if (useDemoMode.value) {
-            // Update record in localStorage
-            const allRecords = getDemoRecords();
-            const recordIndex = allRecords.findIndex(r => r.id === editingRecord.value.id);
-            
-            if (recordIndex !== -1) {
-                allRecords[recordIndex] = {
-                    ...allRecords[recordIndex],
-                    ...formData.value,
-                    name: formData.value.website || formData.value.card_name || formData.value.full_name || formData.value.folder_name || formData.value.file_name || allRecords[recordIndex].name
-                };
-                saveDemoRecords(allRecords);
-            }
-            
-            await fetchRecords();
-            resetForm();
-            return;
-        }
-        
         const indicators = currentFields.value.map(field => ({
             id: field.id,
             type: field.type_value,
@@ -419,18 +210,6 @@ const deleteSelectedRecords = async () => {
     if (selectedRecords.value.size === 0) return;
 
     try {
-        if (useDemoMode.value) {
-            // Delete records from localStorage
-            const allRecords = getDemoRecords();
-            const idsToDelete = Array.from(selectedRecords.value);
-            const filteredRecords = allRecords.filter(record => !idsToDelete.includes(record.id));
-            saveDemoRecords(filteredRecords);
-            
-            await fetchRecords();
-            selectedRecords.value.clear();
-            return;
-        }
-        
         const response = await fetch(`${API_BASE_URL}/secure-storage/storage/app/bulk-delete/`, {
             method: 'DELETE',
             headers: getHeaders(),
@@ -461,12 +240,7 @@ const resetForm = () => {
 
 const startEdit = (record) => {
     editingRecord.value = record;
-    // Populate form with existing data
-    const newFormData = {};
-    currentFields.value.forEach(field => {
-        newFormData[field.code] = record[field.code] || '';
-    });
-    formData.value = newFormData;
+    // Populate form with existing data (you'd need to fetch the full record data)
     showForm.value = true;
 };
 
@@ -495,12 +269,6 @@ const toggleRecordSelection = (recordId) => {
     } else {
         selectedRecords.value.add(recordId);
     }
-};
-
-const toggleDemoMode = () => {
-    useDemoMode.value = !useDemoMode.value;
-    selectedRecords.value.clear();
-    fetchStorageTypes();
 };
 
 // Computed properties
@@ -543,6 +311,7 @@ const handleSubmit = () => {
     }
 };
 </script>
+
 <template>
     <div class="py-5 space-y-6">
         <!-- Header -->
