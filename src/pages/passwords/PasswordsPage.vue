@@ -15,7 +15,6 @@ import {
     GlobeAltIcon,
     UserIcon,
     FolderIcon,
-    FilterIcon,
     Squares2X2Icon,
     ListBulletIcon,
     ArrowPathIcon,
@@ -77,7 +76,7 @@ const getFieldTypeIcon = (type) => {
         'str': UserIcon,
         'text': DocumentIcon,
         'int': '#123',
-        'list': FilterIcon
+        'list': FolderIcon
     };
     return iconMap[type] || DocumentIcon;
 };
